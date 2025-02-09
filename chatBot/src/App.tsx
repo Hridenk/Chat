@@ -45,52 +45,58 @@ const App: React.FC = () => {
       ],
     },
     "2": {
-      message: "You selected Account Information.",
+      message: `📂 **Account Information**\n\n
+      - You can manage your account settings, update personal details, and check your balance.\n
+      - If you need help accessing your account, you can reset your password or contact support.\n`,
       options: [
         { label: "Back", next: "0" },
-        { label: "Next", next: "5" },
+        { label: "Next", next: "7" }, // Goes to "Is there any other query?"
       ],
     },
     "3": {
-      message: "You selected Customer Services.",
+      message: `📞 **Customer Services**\n\n
+      - Our support team is available **24/7** to assist you.\n
+      - You can reach us via **phone, email, or live chat**.\n
+      - We can help with **billing, technical issues, and general inquiries**.\n`,
       options: [
         { label: "Back", next: "0" },
-        { label: "Next", next: "5" },
+        { label: "Next", next: "7" }, // Goes to "Is there any other query?"
       ],
     },
     "4": {
-      message: "You selected Loan Services.",
+      message: `💰 **Loan Services**\n\n
+      - We offer personal, home, and business loans at competitive interest rates.\n
+      - Check your eligibility and apply online for a quick approval process.\n`,
       options: [
         { label: "Back", next: "0" },
-        { label: "Next", next: "5" },
-      ],
-    },
-    "5": {
-      message: "Is there anything else I can help you with?",
-      options: [
-        { label: "Yes, I have another query.", next: "0" },
-        { label: "No, thank you!", next: "7" },
+        { label: "Next", next: "7" }, // Goes to "Is there any other query?"
       ],
     },
     "7": {
-      message: "Thank you for using our service. Have a great day!",
-      end: true,
+      message: "❓ **Is there any other query?**",
+      options: [
+        { label: "Yes", next: "0" }, // Goes back to Account Info, Customer Services, and Loan Services
+        { label: "No", next: "8" },  // Goes to Contact Us step
+      ],
     },
     "8": {
-      message: "If you have more queries, you can contact us.",
+      message: `❗ **If you have any issues, please contact us.**`,
       options: [
-        {
-          label: "Contact Us",
-          next: "7",
-          action: () => window.open("https://www.cab.edu.np/", "_blank"),
-        },
+        { label: "Contact Us", next: "9", action: () => window.open("https://www.cab.edu.np/", "_blank") },
       ],
+    },
+    "9": {
+      message: "Redirecting to Contact Us page...",
+      end: true,
     },
   };
 
   const handleOptionClick = (option: Option) => {
     const { label, next, action } = option;
-    setChatHistory((prev) => [...prev, { sender: "user", text: label }]);
+
+    if (label !== "Back" && label !== "Next") {
+      setChatHistory((prev) => [...prev, { sender: "user", text: label }]);
+    }
 
     const nextStep = steps[next];
     if (nextStep) {
@@ -100,16 +106,6 @@ const App: React.FC = () => {
       }, 500);
     }
 
-    if (next === "7") {
-      setTimeout(() => {
-        const contactStep = steps["8"];
-        if (contactStep) {
-          setChatHistory((prev) => [...prev, { sender: "bot", text: contactStep.message }]);
-          setCurrentStep("8");
-        }
-      }, 1000);
-    }
-
     if (action) {
       action();
     }
@@ -117,18 +113,41 @@ const App: React.FC = () => {
 
   const handleSendMessage = () => {
     if (userInput.trim() === "") return;
-
+  
     setChatHistory((prev) => [...prev, { sender: "user", text: userInput }]);
-
+  
     let response = "I'm sorry, I don't understand. Can you please rephrase?";
-    for (let keyword in keywordResponses) {
-      if (userInput.toLowerCase().includes(keyword)) {
-        response = keywordResponses[keyword];
-        break;
+    let matchedStep = "";
+  
+    // Check if the user input matches one of the options
+    if (/account information/i.test(userInput)) {
+      matchedStep = "2";
+    } else if (/customer services/i.test(userInput)) {
+      matchedStep = "3";
+    } else if (/loan services/i.test(userInput)) {
+      matchedStep = "4";
+    } else {
+      for (let keyword in keywordResponses) {
+        if (userInput.toLowerCase().includes(keyword)) {
+          response = keywordResponses[keyword];
+          break;
+        }
       }
     }
-
+  
+    if (matchedStep) {
+      response = steps[matchedStep].message;
+      setCurrentStep(matchedStep);
+    }
+  
     setChatHistory((prev) => [...prev, { sender: "bot", text: response }]);
+    setUserInput("");
+  };
+  
+
+  const handleRefresh = () => {
+    setChatHistory([{ sender: "bot", text: steps["0"].message }]);
+    setCurrentStep("0");
     setUserInput("");
   };
 
@@ -160,8 +179,7 @@ const App: React.FC = () => {
       </button>
 
       {showChatBot && (
-        <div
-          className="position-fixed shadow"
+        <div className="position-fixed shadow"
           style={{
             bottom: 20,
             right: 20,
@@ -176,67 +194,57 @@ const App: React.FC = () => {
           }}
         >
           <div
-            style={{
-              background: "#563d7c",
-              color: "#fff",
-              padding: "15px 20px",
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  background: "green",
-                  borderRadius: "50%",
-                  marginRight: 10,
-                }}
-              ></span>
-              <strong>Pritu Bot</strong>
-            </div>
-            <div>
-              <button
-                className="btn btn-sm btn-light me-1"
-                onClick={() => {
-                  setChatHistory([{ sender: "bot", text: steps["0"].message }]);
-                  setCurrentStep("0");
-                }}
-              >
-                🔄
-              </button>
-              <button
-                className="btn btn-sm btn-light"
-                onClick={() => setShowChatBot(false)}
-              >
-                ✖
-              </button>
-            </div>
-          </div>
-
+  style={{
+    background: "#563d7c",
+    color: "#fff",
+    padding: "15px 20px",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  }}
+>
+  <div style={{ display: "flex", alignItems: "center" }}>
+    <span
+      style={{
+        width: 10,
+        height: 10,
+        background: "green",
+        borderRadius: "50%",
+        marginRight: 10,
+      }}
+    ></span>
+    <strong>Pritu Bot</strong>
+  </div>
+  <div>
+    {/* Refresh Button */}
+    <button
+      className="btn btn-sm btn-warning me-2"
+      onClick={handleRefresh}
+    >
+      🔄
+    </button>
+    {/* Close Button */}
+    <button
+      className="btn btn-sm btn-light"
+      onClick={() => setShowChatBot(false)}
+    >
+      ✖
+    </button>
+  </div>
+</div>
           <div style={{ flex: 1, overflowY: "auto", padding: 15 }}>
             {chatHistory.map((chat, index) => (
-              <div
-                key={index}
-                style={{
-                  textAlign: chat.sender === "bot" ? "left" : "right",
-                  margin: "10px 0",
-                }}
-              >
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: 15,
-                    borderRadius: 12,
-                    backgroundColor: chat.sender === "bot" ? "#e0e0e0" : "#007bff",
-                    color: chat.sender === "bot" ? "#000" : "#fff",
-                    maxWidth: "80%",
-                  }}
-                >
+              <div key={index} style={{ textAlign: chat.sender === "bot" ? "left" : "right", margin: "10px 0" }}>
+                <span style={{
+                  display: "inline-block",
+                  padding: 15,
+                  borderRadius: 12,
+                  backgroundColor: chat.sender === "bot" ? "#e0e0e0" : "#007bff",
+                  color: chat.sender === "bot" ? "#000" : "#fff",
+                  maxWidth: "80%",
+                }}>
                   {chat.text}
                 </span>
               </div>
@@ -249,15 +257,22 @@ const App: React.FC = () => {
                 {option.label}
               </button>
             ))}
-            <div style={{ display: "flex", marginTop: 15 }}>
+
+            <div className="d-flex mt-3">
               <input
                 type="text"
-                className="form-control"
-                placeholder="Type a message..."
+                className="form-control me-2"
+                placeholder="Type your message..."
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSendMessage();
+                }}
               />
-              <button className="btn btn-primary ms-2" onClick={handleSendMessage}>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={handleSendMessage}
+              >
                 Send
               </button>
             </div>
